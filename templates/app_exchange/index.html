@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h3 class="text-center p-3">Currency Exchange</h3>
+    <div class="mt-2 p-3 text-center border border-1">
+        <form id="form" method="post" class="row g-3">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="col-auto">
+                    {{ field.label_tag }} {{ field }}
+                </div>
+            {% endfor %}
+            <div class="col-auto">
+                <input id="convert" class="btn btn-primary btn-sm" type="button" value="Convert">
+            </div>
+        </form>
+        <div id="id_non_field_errors"></div>
+    </div>
+    <div class="mt-2 p-3 text-center border border-1 text-success fs-5" id="result-block" style="display: none;">
+        <span id="result_amount"></span> <span id="result_from"></span> =
+        <span id="result">{{ result }}</span> <span id="result_to"></span>
+    </div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+$(document).ready(function(){
+    $('#convert').on('click', function(e){
+        $.ajax({
+            url: "{% url 'exchange:form' %}",
+            method: 'POST',
+            data: {
+                amount: $('#id_amount').val(),
+                currency_from: $('#id_currency_from').val(),
+                currency_to: $('#id_currency_to').val(),
+                csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                $(".text-danger").remove();
+                if (response.success) {
+                    $('#result-block').show()
+                    $('.text-danger').hide()
+                    $('#result').text(response.result)
+                    $('#result_amount').text($('#id_amount').val())
+                    $('#result_from').text($('#id_currency_from').val())
+                    $('#result_to').text($('#id_currency_to').val())
+                } else {
+                    $('#result-block').hide()
+                    $.each(JSON.parse(response.errors), function(index, value) {
+                        $.each(value, function(i, val) {
+                            $('<div class="text-danger">' + val.message + '</div>').insertAfter("#id_" + index);
+                        })
+                    })
+                }
+            },
+        });
+    });
+});
+</script>
+{% endblock %}
